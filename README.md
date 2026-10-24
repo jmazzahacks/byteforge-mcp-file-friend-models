@@ -27,4 +27,4 @@ Dependency locks retain the versions and hashes already validated in the workspa
 
 This independent repository contains an unchanged copy of the original models implementation. The old `src/ff/models` module remains in the parent workspace until its consumers are migrated. Do not make divergent model changes during that transition.
 
-License and remote visibility remain undecided. No license grant is implied; do not publish yet. No GitHub remote has been created.
+Licensed under the MIT License; see `LICENSE`. The approved public repository is `jmazzahacks/byteforge-mcp-file-friend-models`.

@@ -10,6 +10,12 @@ readme = "README.md"
 requires-python = ">=3.13"
 authors = [{name = "Jason Byteforge"}]
 dependencies = []
+license = "MIT"
+license-files = ["LICENSE"]
+
+[project.urls]
+Homepage = "https://github.com/jmazzahacks/byteforge-mcp-file-friend-models"
+Issues = "https://github.com/jmazzahacks/byteforge-mcp-file-friend-models/issues"
 
 [tool.hatch.metadata]
 allow-direct-references = true

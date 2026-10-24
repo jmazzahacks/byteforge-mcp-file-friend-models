@@ -4,4 +4,4 @@ Independent models repository in the File Friend multi-repository workspace. Fol
 
 Keep wire contracts stable. No server, client, database or Flask imports. Root virtual environment at `bin/activate`; preserve `.gitignore` when recreating it. Tests must run against the installed wheel and must not load the parent PostgreSQL fixture.
 
-This is the first extraction checkpoint; the parent legacy module remains unchanged until consumer migration. License and GitHub visibility are pending; no publication. Never modify another agent's code or infrastructure.
+This is the first extraction checkpoint; the parent legacy module remains unchanged until consumer migration. Jason approved MIT licensing and public GitHub repositories under `jmazzahacks` on 2026-10-24. Never modify another agent's code or infrastructure.
