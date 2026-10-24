@@ -91,7 +91,7 @@ class FriendConfig:
     root: Path
     public_url: str
     tusd_url: str = "http://127.0.0.1:8080/files/"
-    hook_token: str = ""
+    hook_token: str = field(default="", repr=False)
     dev_admin_token: str = ""
     max_size: int = 50 * 1024**3
     min_free: int = 1024**3
@@ -172,5 +172,5 @@ class FriendConfig:
                 raise ValueError("Invalid configured service URL")
         if urlsplit(self.public_url).path not in ("", "/"):
             raise ValueError("FF_PUBLIC_URL must be an origin without a path")
-        if not self.hook_token:
-            raise ValueError("FF_HOOK_TOKEN is required")
+        if not re.fullmatch(r"[A-Za-z0-9_-]{32,512}", self.hook_token):
+            raise ValueError("FF_HOOK_TOKEN must be 32-512 URL-safe ASCII characters")

@@ -62,11 +62,11 @@ def test_reference_rejects_invalid_contract(overrides: dict) -> None:
 ])
 def test_public_url_rejects_paths_and_invalid_ports(tmp_path: Path, url: str) -> None:
     with pytest.raises(ValueError):
-        FriendConfig(tmp_path, url, hook_token='hook').validate()
+        FriendConfig(tmp_path, url, hook_token='hook-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx').validate()
 
 
 def test_configuration_requires_hook_and_finite_deadlines(tmp_path: Path) -> None:
-    config = FriendConfig(tmp_path, 'https://ff.example', hook_token='hook')
+    config = FriendConfig(tmp_path, 'https://ff.example', hook_token='hook-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
     config.validate()
     for invalid in (replace(config, hook_token=''), replace(config, worker_timeout=float('nan'))):
         with pytest.raises(ValueError):
@@ -74,7 +74,7 @@ def test_configuration_requires_hook_and_finite_deadlines(tmp_path: Path) -> Non
 
 
 def test_storage_budget_configuration(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setenv('FF_HOOK_TOKEN', 'hook')
+    monkeypatch.setenv('FF_HOOK_TOKEN', 'hook-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
     monkeypatch.setenv('FF_STORAGE_BUDGET_BYTES', '214748364800')
     monkeypatch.setenv('FF_MIN_FREE_BYTES', '64424509440')
     config = FriendConfig.from_env()
@@ -89,7 +89,7 @@ def test_storage_budget_configuration(tmp_path: Path, monkeypatch) -> None:
 def test_ingress_configuration_from_environment(monkeypatch) -> None:
     monkeypatch.setenv('FF_AUTH_MODE', 'ingress')
     monkeypatch.setenv('FF_INGRESS_SHARED_SECRET', 'a' * 64)
-    monkeypatch.setenv('FF_HOOK_TOKEN', 'hook-secret')
+    monkeypatch.setenv('FF_HOOK_TOKEN', 'hook-secret-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
     monkeypatch.delenv('FF_DEV_ADMIN_TOKEN', raising=False)
     config = FriendConfig.from_env()
     config.validate()
@@ -110,7 +110,21 @@ def test_ingress_configuration_from_environment(monkeypatch) -> None:
     {'auth_mode': 'development'},
 ])
 def test_invalid_auth_configuration_fails_closed(tmp_path: Path, overrides: dict) -> None:
-    config = FriendConfig(tmp_path, 'https://ff.example', hook_token='hook',
+    config = FriendConfig(tmp_path, 'https://ff.example', hook_token='hook-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
                           auth_mode='ingress', ingress_shared_secret='a' * 64)
     with pytest.raises(ValueError):
         replace(config, **overrides).validate()
+
+
+@pytest.mark.parametrize('token', ['', 'short', 'a' * 513, 'a' * 32 + '@', 'a' * 32 + ':',
+                                  'a' * 32 + '/', 'a' * 32 + '#', 'a' * 32 + '%', 'é' * 32])
+def test_hook_token_rejects_unsafe_userinfo(tmp_path: Path, token: str) -> None:
+    with pytest.raises(ValueError, match='FF_HOOK_TOKEN'):
+        FriendConfig(tmp_path, 'https://ff.example', hook_token=token).validate()
+
+
+@pytest.mark.parametrize('token', ['a' * 32, 'z' * 512, 'safe_-' + 'a' * 32])
+def test_hook_token_accepts_safe_bounds(tmp_path: Path, token: str) -> None:
+    config = FriendConfig(tmp_path, 'https://ff.example', hook_token=token)
+    config.validate()
+    assert token not in repr(config)
