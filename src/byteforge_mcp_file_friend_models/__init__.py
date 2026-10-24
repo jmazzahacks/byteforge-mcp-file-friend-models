@@ -102,6 +102,7 @@ class FriendConfig:
     retention: int = 604800
     worker_timeout: float = 3600
     worker_grace: float = 15
+    storage_budget: int = 200 * 1024**3
 
     @classmethod
     def from_env(cls) -> "FriendConfig":
@@ -114,6 +115,7 @@ class FriendConfig:
             max_size=int(os.environ.get("FF_MAX_SIZE", str(50 * 1024**3))),
             min_free=int(os.environ.get("FF_MIN_FREE_BYTES", str(1024**3))),
             max_active=int(os.environ.get("FF_MAX_ACTIVE", "16")),
+            storage_budget=int(os.environ.get("FF_STORAGE_BUDGET_BYTES", str(200 * 1024**3))),
             incomplete_ttl=int(os.environ.get("FF_INCOMPLETE_TTL", "86400")),
             incomplete_max_age=int(os.environ.get("FF_INCOMPLETE_MAX_AGE", "604800")),
             reservation_ttl=int(os.environ.get("FF_RESERVATION_TTL", "300")),
@@ -123,7 +125,7 @@ class FriendConfig:
         )
 
     def validate(self) -> None:
-        if self.max_size < 0 or self.min_free < 0 or self.max_active < 1:
+        if self.max_size < 0 or self.min_free < 0 or self.max_active < 1 or self.storage_budget < 0:
             raise ValueError("Invalid storage limits")
         if (
             min(

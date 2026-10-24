@@ -71,3 +71,16 @@ def test_configuration_requires_hook_and_finite_deadlines(tmp_path: Path) -> Non
     for invalid in (replace(config, hook_token=''), replace(config, worker_timeout=float('nan'))):
         with pytest.raises(ValueError):
             invalid.validate()
+
+
+def test_storage_budget_configuration(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv('FF_HOOK_TOKEN', 'hook')
+    monkeypatch.setenv('FF_STORAGE_BUDGET_BYTES', '214748364800')
+    monkeypatch.setenv('FF_MIN_FREE_BYTES', '64424509440')
+    config = FriendConfig.from_env()
+    config.validate()
+    assert config.storage_budget == 200 * 1024**3
+    assert config.min_free == 60 * 1024**3
+    with pytest.raises(ValueError):
+        replace(config, storage_budget=-1).validate()
+    replace(config, storage_budget=0).validate()
