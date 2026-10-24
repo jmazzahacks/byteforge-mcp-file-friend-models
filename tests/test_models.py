@@ -84,3 +84,33 @@ def test_storage_budget_configuration(tmp_path: Path, monkeypatch) -> None:
     with pytest.raises(ValueError):
         replace(config, storage_budget=-1).validate()
     replace(config, storage_budget=0).validate()
+
+
+def test_ingress_configuration_from_environment(monkeypatch) -> None:
+    monkeypatch.setenv('FF_AUTH_MODE', 'ingress')
+    monkeypatch.setenv('FF_INGRESS_SHARED_SECRET', 'a' * 64)
+    monkeypatch.setenv('FF_HOOK_TOKEN', 'hook-secret')
+    monkeypatch.delenv('FF_DEV_ADMIN_TOKEN', raising=False)
+    config = FriendConfig.from_env()
+    config.validate()
+    assert config.auth_mode == 'ingress'
+    assert config.ingress_shared_secret == 'a' * 64
+    assert config.ingress_shared_secret not in repr(config)
+
+
+@pytest.mark.parametrize('overrides', [
+    {'auth_mode': 'typo'},
+    {'ingress_shared_secret': ''},
+    {'ingress_shared_secret': 'short'},
+    {'ingress_shared_secret': 'é' * 32},
+    {'ingress_shared_secret': 'a' * 32 + '\n'},
+    {'ingress_shared_secret': 'a' * 513},
+    {'dev_admin_token': 'dev'},
+    {'hook_token': 'a' * 64},
+    {'auth_mode': 'development'},
+])
+def test_invalid_auth_configuration_fails_closed(tmp_path: Path, overrides: dict) -> None:
+    config = FriendConfig(tmp_path, 'https://ff.example', hook_token='hook',
+                          auth_mode='ingress', ingress_shared_secret='a' * 64)
+    with pytest.raises(ValueError):
+        replace(config, **overrides).validate()

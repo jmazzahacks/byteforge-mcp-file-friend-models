@@ -3,7 +3,7 @@
 import math
 import os
 import re
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -103,6 +103,8 @@ class FriendConfig:
     worker_timeout: float = 3600
     worker_grace: float = 15
     storage_budget: int = 200 * 1024**3
+    auth_mode: str = "development"
+    ingress_shared_secret: str = field(default="", repr=False)
 
     @classmethod
     def from_env(cls) -> "FriendConfig":
@@ -112,6 +114,8 @@ class FriendConfig:
             tusd_url=os.environ.get("FF_TUSD_URL", "http://127.0.0.1:8080/files/"),
             hook_token=os.environ.get("FF_HOOK_TOKEN", ""),
             dev_admin_token=os.environ.get("FF_DEV_ADMIN_TOKEN", ""),
+            auth_mode=os.environ.get("FF_AUTH_MODE", "development"),
+            ingress_shared_secret=os.environ.get("FF_INGRESS_SHARED_SECRET", ""),
             max_size=int(os.environ.get("FF_MAX_SIZE", str(50 * 1024**3))),
             min_free=int(os.environ.get("FF_MIN_FREE_BYTES", str(1024**3))),
             max_active=int(os.environ.get("FF_MAX_ACTIVE", "16")),
@@ -125,6 +129,17 @@ class FriendConfig:
         )
 
     def validate(self) -> None:
+        if self.auth_mode not in ("development", "ingress"):
+            raise ValueError("FF_AUTH_MODE must be development or ingress")
+        if self.auth_mode == "ingress":
+            if not re.fullmatch(r"[A-Za-z0-9_-]{32,512}", self.ingress_shared_secret):
+                raise ValueError("FF_INGRESS_SHARED_SECRET must be 32-512 URL-safe ASCII characters")
+            if self.dev_admin_token:
+                raise ValueError("FF_DEV_ADMIN_TOKEN must be unset in ingress mode")
+            if self.ingress_shared_secret == self.hook_token:
+                raise ValueError("Ingress and hook credentials must be distinct")
+        elif self.ingress_shared_secret:
+            raise ValueError("FF_INGRESS_SHARED_SECRET requires ingress mode")
         if self.max_size < 0 or self.min_free < 0 or self.max_active < 1 or self.storage_budget < 0:
             raise ValueError("Invalid storage limits")
         if (
